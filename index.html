@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Breakout - Progressive Difficulty</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+    
+    .game-container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    #breakout {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: rgba(0, 0, 0, 0.7);
+    }
+    
+    .controls {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .controls button {
+      font-size: 1.1rem;
+      padding: 12px 25px;
+      border-radius: 50px;
+      border: none;
+      background: linear-gradient(to right, #4a6eff, #6c8eff);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      font-weight: bold;
+    }
+    
+    .controls button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .controls button:active {
+      transform: translateY(1px);
+    }
+    
+    #endBtn {
+      background: linear-gradient(to right, #ff4754, #ff6b7a);
+    }
+    
+    #scoreboard {
+      font-size: 1.8rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 10px 25px;
+      border-radius: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    .game-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 25px 40px;
+      border-radius: 15px;
+      z-index: 10;
+      pointer-events: none;
+      backdrop-filter: blur(5px);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      width: 80%;
+      display: none;
+    }
+    
+    .mobile-controls {
+      display: none;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+      gap: 20px;
+      justify-content: center;
+    }
+    
+    .mobile-controls button {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(to bottom, #4a6eff, #3a5ee0);
+      color: white;
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-controls button:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .instructions {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 1.1rem;
+      opacity: 0.9;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 20px;
+      border-radius: 10px;
+      max-width: 500px;
+    }
+    
+    .difficulty-meter {
+      width: 100%;
+      max-width: 400px;
+      height: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    
+    .difficulty-level {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #4a6eff, #ff4754);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+    
+    .difficulty-label {
+      margin-top: 5px;
+      font-size: 1rem;
+      text-align: center;
+    }
+    
+    /* Media queries for responsiveness */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2.2rem;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      #scoreboard {
+        font-size: 1.5rem;
+      }
+      
+      .mobile-controls {
+        display: flex;
+      }
+      
+      .instructions {
+        font-size: 0.9rem;
+      }
+      
+      .game-message {
+        font-size: 1.5rem;
+        padding: 15px 25px;
+      }
+    }
+    
+    @media (max-width: 400px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      .controls button {
+        padding: 10px 20px;
+        font-size: 1rem;
+      }
+      
+      .mobile-controls button {
+        width: 70px;
+        height: 70px;
+        font-size: 1.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>BREAKOUT</h1>
+  
+  <div class="game-container">
+    <div class="canvas-wrapper">
+      <canvas id="breakout"></canvas>
+      <div id="gameMessage" class="game-message">Press START to play!</div>
+    </div>
+    
+    <div id="scoreboard">Score: <span id="score">0</span></div>
+    
+    <div class="difficulty-meter">
+      <div class="difficulty-level" id="difficultyLevel"></div>
+    </div>
+    <div class="difficulty-label">Difficulty: <span id="difficultyText">Level 1</span></div>
+    
+    <div class="controls">
+      <button id="startBtn">Start Game</button>
+      <button id="endBtn">End Game</button>
+    </div>
+    
+    <div class="mobile-controls">
+      <button id="leftBtn">←</button>
+      <button id="rightBtn">→</button>
+    </div>
+    
+    <div class="instructions">
+      <p>Use arrow keys or touch to move the paddle. Break all bricks to win!</p>
+      <p>Game gets faster as you progress!</p>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('breakout');
+    const ctx = canvas.getContext('2d');
+    const startBtn = document.getElementById('startBtn');
+    const endBtn = document.getElementById('endBtn');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const gameMessage = document.getElementById('gameMessage');
+    const scoreSpan = document.getElementById('score');
+    const difficultyLevel = document.getElementById('difficultyLevel');
+    const difficultyText = document.getElementById('difficultyText');
+
+    // Set initial canvas size based on container
+    const canvasWrapper = document.querySelector('.canvas-wrapper');
+    let WIDTH = canvasWrapper.clientWidth;
+    let HEIGHT = Math.min(WIDTH * 0.6, window.innerHeight * 0.5);
+    
+    // Paddle settings
+    const PADDLE_WIDTH = Math.max(80, WIDTH * 0.12);
+    const PADDLE_HEIGHT = Math.max(15, HEIGHT * 0.03);
+    const PADDLE_SPEED = 7;
+
+    // Ball settings - starting slow
+    const BALL_SIZE = Math.max(12, WIDTH * 0.015);
+    let ballSpeed = 3; // Start slower
+    const MAX_BALL_SPEED = 7; // Maximum speed
+
+    // Brick settings
+    const BRICK_ROWS = 5;
+    const BRICK_COLS = 8;
+    const BRICK_WIDTH = Math.max(60, WIDTH * 0.1);
+    const BRICK_HEIGHT = Math.max(20, HEIGHT * 0.04);
+    const BRICK_PADDING = Math.max(5, WIDTH * 0.008);
+    const BRICK_OFFSET_TOP = Math.max(30, HEIGHT * 0.06);
+    const BRICK_OFFSET_LEFT = Math.max(10, WIDTH * 0.02);
+
+    let score = 0;
+    let gameActive = false;
+    let animationId;
+    let difficulty = 1;
+    let bricksBroken = 0;
+    let totalBricks = BRICK_ROWS * BRICK_COLS;
+
+    // Paddle
+    const paddle = {
+      x: WIDTH/2 - PADDLE_WIDTH/2,
+      y: HEIGHT - PADDLE_HEIGHT - 12,
+      dx: 0
+    };
+
+    // Ball
+    const ball = {
+      x: WIDTH/2,
+      y: HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 12,
+      dx: ballSpeed * (Math.random() > 0.5 ? 1 : -1),
+      dy: -ballSpeed
+    };
+
+    // Bricks
+    let bricks = [];
+    const brickColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#ffbe0b', '#ff006e'];
+
+    function createBricks() {
+      bricks = [];
+      for(let r = 0; r < BRICK_ROWS; r++) {
+        for(let c = 0; c < BRICK_COLS; c++) {
+          const brickX = BRICK_OFFSET_LEFT + c * (BRICK_WIDTH + BRICK_PADDING);
+          const brickY = BRICK_OFFSET_TOP + r * (BRICK_HEIGHT + BRICK_PADDING);
+          bricks.push({ 
+            x: brickX, 
+            y: brickY, 
+            status: true,
+            color: brickColors[r % brickColors.length],
+            strength: r + 1 // Higher rows take more hits
+          });
+        }
+      }
+    }
+
+    // Initialize canvas size
+    function initCanvasSize() {
+      WIDTH = canvasWrapper.clientWidth;
+      HEIGHT = Math.min(WIDTH * 0.6, window.innerHeight * 0.5);
+      
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+      
+      // Adjust paddle and ball positions based on new size
+      paddle.x = WIDTH/2 - PADDLE_WIDTH/2;
+      paddle.y = HEIGHT - PADDLE_HEIGHT - 12;
+      
+      ball.x = WIDTH/2;
+      ball.y = HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 12;
+    }
+
+    // Update difficulty level
+    function updateDifficulty() {
+      // Increase difficulty based on percentage of bricks broken
+      const progress = bricksBroken / totalBricks;
+      
+      if (progress < 0.25) {
+        difficulty = 1;
+        ballSpeed = 3;
+        difficultyText.textContent = "Level 1 - Easy";
+      } else if (progress < 0.5) {
+        difficulty = 2;
+        ballSpeed = 4;
+        difficultyText.textContent = "Level 2 - Medium";
+      } else if (progress < 0.75) {
+        difficulty = 3;
+        ballSpeed = 5;
+        difficultyText.textContent = "Level 3 - Hard";
+      } else {
+        difficulty = 4;
+        ballSpeed = 6;
+        difficultyText.textContent = "Level 4 - Expert";
+      }
+      
+      // Update difficulty meter
+      difficultyLevel.style.width = `${progress * 100}%`;
+      
+      // Apply the new speed to the ball while maintaining direction
+      const dxSign = Math.sign(ball.dx);
+      const dySign = Math.sign(ball.dy);
+      ball.dx = dxSign * ballSpeed;
+      ball.dy = dySign * ballSpeed;
+    }
+
+    // Sound helpers using Web Audio API
+    function playPing(frequency = 660, duration = 0.08, volume = 0.2) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = frequency;
+        gain.gain.value = volume;
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + duration);
+        oscillator.onended = () => ctx.close();
+      } catch (e) {
+        console.log("Audio context not supported");
+      }
+    }
+
+    // Draw paddle
+    function drawPaddle() {
+      // Add a subtle gradient effect
+      const gradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x + PADDLE_WIDTH, paddle.y);
+      gradient.addColorStop(0, '#6383ff');
+      gradient.addColorStop(1, '#4a6eff');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(paddle.x, paddle.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+      
+      // Add inner highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillRect(paddle.x, paddle.y, PADDLE_WIDTH/3, PADDLE_HEIGHT);
+    }
+
+    // Draw ball
+    function drawBall() {
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, BALL_SIZE/2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Add a glow effect to the ball
+      ctx.shadowColor = '#4a6eff';
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // Draw bricks
+    function drawBricks() {
+      bricks.forEach(brick => {
+        if(brick.status) {
+          ctx.fillStyle = brick.color;
+          ctx.fillRect(brick.x, brick.y, BRICK_WIDTH, BRICK_HEIGHT);
+          
+          // Add inner highlight
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.fillRect(brick.x, brick.y, BRICK_WIDTH/4, BRICK_HEIGHT);
+          
+          ctx.strokeStyle = "#222";
+          ctx.strokeRect(brick.x, brick.y, BRICK_WIDTH, BRICK_HEIGHT);
+          
+          // Draw strength indicator for bricks that require multiple hits
+          if (brick.strength > 1) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.font = '12px Arial';
+            ctx.fillText(brick.strength, brick.x + BRICK_WIDTH/2 - 5, brick.y + BRICK_HEIGHT/2 + 4);
+          }
+        }
+      });
+    }
+
+    // Draw everything
+    function draw() {
+      // Clear canvas with a dark background
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      
+      drawBricks();
+      drawPaddle();
+      drawBall();
+      
+      // Draw difficulty indicator in corner
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.font = '14px Arial';
+      ctx.fillText(`Level: ${difficulty}`, 10, 20);
+    }
+
+    // Move paddle
+    function movePaddle() {
+      paddle.x += paddle.dx;
+      if(paddle.x < 0) paddle.x = 0;
+      if(paddle.x + PADDLE_WIDTH > WIDTH) paddle.x = WIDTH - PADDLE_WIDTH;
+    }
+
+    // Move ball and handle collisions
+    function moveBall() {
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // Wall bounce
+      if(ball.x - BALL_SIZE/2 < 0 || ball.x + BALL_SIZE/2 > WIDTH) {
+        ball.dx *= -1;
+        playPing(330); // Wall bounce sound
+      }
+      if(ball.y - BALL_SIZE/2 < 0) {
+        ball.dy *= -1;
+        playPing(330); // Wall bounce sound
+      }
+
+      // Paddle bounce
+      if(
+        ball.y + BALL_SIZE/2 > paddle.y &&
+        ball.x > paddle.x &&
+        ball.x < paddle.x + PADDLE_WIDTH
+      ) {
+        ball.dy = -Math.abs(ball.dy);
+        // Add effect based on paddle movement
+        ball.dx += paddle.dx * 0.2;
+        playPing(800); // Paddle hit sound
+      }
+
+      // Brick collision
+      bricks.forEach(brick => {
+        if(brick.status) {
+          if(
+            ball.x > brick.x &&
+            ball.x < brick.x + BRICK_WIDTH &&
+            ball.y - BALL_SIZE/2 < brick.y + BRICK_HEIGHT &&
+            ball.y + BALL_SIZE/2 > brick.y
+          ) {
+            brick.strength--;
+            
+            if (brick.strength <= 0) {
+              brick.status = false;
+              bricksBroken++;
+              updateDifficulty();
+            }
+            
+            ball.dy *= -1;
+            score += difficulty; // More points for higher difficulty
+            updateScore();
+            playPing(600, 0.1, 0.3); // Brick break sound
+          }
+        }
+      });
+
+      // Lose condition
+      if(ball.y - BALL_SIZE/2 > HEIGHT) {
+        playPing(120, 0.3, 0.5); // Lose sound
+        endGame("Game Over! Your score: " + score);
+      }
+    }
+
+    // Update score UI
+    function updateScore() {
+      scoreSpan.textContent = score;
+    }
+
+    // Main game loop
+    function gameLoop() {
+      movePaddle();
+      moveBall();
+      draw();
+      if(gameActive) animationId = requestAnimationFrame(gameLoop);
+
+      // Win condition
+      if(bricks.every(brick => !brick.status)) {
+        playPing(440, 0.5, 0.5); // Win sound
+        endGame("You Win! Final score: " + score);
+      }
+    }
+
+    // Start game
+    function startGame() {
+      score = 0;
+      bricksBroken = 0;
+      difficulty = 1;
+      ballSpeed = 3;
+      updateScore();
+      updateDifficulty();
+      paddle.x = WIDTH/2 - PADDLE_WIDTH/2;
+      paddle.dx = 0;
+      ball.x = WIDTH/2;
+      ball.y = HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 12;
+      ball.dx = ballSpeed * (Math.random() > 0.5 ? 1 : -1);
+      ball.dy = -ballSpeed;
+      createBricks();
+      gameActive = true;
+      gameMessage.style.display = "none";
+      gameLoop();
+    }
+
+    // End game
+    function endGame(msg="Game Over") {
+      gameActive = false;
+      cancelAnimationFrame(animationId);
+      gameMessage.textContent = msg;
+      gameMessage.style.display = "block";
+    }
+
+    // Button events
+    startBtn.addEventListener('click', startGame);
+    endBtn.addEventListener('click', () => {
+      playPing(120, 0.2, 0.3);
+      endGame("You ended the game!");
+    });
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if(e.key === "ArrowLeft") paddle.dx = -PADDLE_SPEED;
+      if(e.key === "ArrowRight") paddle.dx = PADDLE_SPEED;
+    });
+    
+    document.addEventListener('keyup', (e) => {
+      if(e.key === "ArrowLeft" || e.key === "ArrowRight") paddle.dx = 0;
+    });
+
+    // Mouse controls
+    canvas.addEventListener('mousemove', (e) => {
+      if (!gameActive) return;
+      const rect = canvas.getBoundingClientRect();
+      let mouseX = e.clientX - rect.left;
+      paddle.x = mouseX - PADDLE_WIDTH/2;
+      if(paddle.x < 0) paddle.x = 0;
+      if(paddle.x + PADDLE_WIDTH > WIDTH) paddle.x = WIDTH - PADDLE_WIDTH;
+    });
+    
+    // Touch controls for mobile
+    canvas.addEventListener('touchmove', (e) => {
+      if (!gameActive) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      let touchX = e.touches[0].clientX - rect.left;
+      paddle.x = touchX - PADDLE_WIDTH/2;
+      if(paddle.x < 0) paddle.x = 0;
+      if(paddle.x + PADDLE_WIDTH > WIDTH) paddle.x = WIDTH - PADDLE_WIDTH;
+    });
+    
+    // Mobile button controls
+    leftBtn.addEventListener('mousedown', () => paddle.dx = -PADDLE_SPEED);
+    leftBtn.addEventListener('touchstart', () => paddle.dx = -PADDLE_SPEED, { passive: true });
+    
+    rightBtn.addEventListener('mousedown', () => paddle.dx = PADDLE_SPEED);
+    rightBtn.addEventListener('touchstart', () => paddle.dx = PADDLE_SPEED, { passive: true });
+    
+    const stopPaddle = () => paddle.dx = 0;
+    leftBtn.addEventListener('mouseup', stopPaddle);
+    leftBtn.addEventListener('touchend', stopPaddle);
+    rightBtn.addEventListener('mouseup', stopPaddle);
+    rightBtn.addEventListener('touchend', stopPaddle);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      initCanvasSize();
+      draw();
+    });
+    
+    // Initialize the game
+    initCanvasSize();
+    createBricks();
+    draw();
+    gameMessage.style.display = "block";
+  </script>
+</body>
+</html>
